@@ -1,859 +1,1698 @@
-import turtle
-import random
-import math
+<!DOCTYPE html>
+<html lang="es">
 
-# ============================================================
-# CONFIGURACIÓN DE LA VENTANA
-# ============================================================
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-pantalla = turtle.Screen()
-pantalla.setup(width=1300, height=750)
-pantalla.title("🌻 Feliz Día de las Flores Amarillas 🌻")
-pantalla.bgcolor("black")
-pantalla.tracer(0)
+    <title>🌻 Feliz Día de las Flores Amarillas 🌻</title>
 
-t = turtle.Turtle()
-t.speed(0)
-t.hideturtle()
+    <style>
 
-random.seed(20)
+        * {
+            box-sizing: border-box;
+        }
 
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: black;
+            font-family: "Trebuchet MS", "Comic Sans MS", sans-serif;
+        }
 
-# ============================================================
-# FUNCIONES BÁSICAS
-# ============================================================
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: black;
+        }
 
-def ir(x, y):
-    t.penup()
-    t.goto(x, y)
-    t.pendown()
+    </style>
 
+</head>
 
-def punto(x, y, tamaño, color):
-    ir(x, y)
-    t.dot(tamaño, color)
+<body>
 
+<canvas id="canvas"></canvas>
 
-def circulo(x, y, radio, color):
-    ir(x, y - radio)
-    t.color(color)
-    t.begin_fill()
-    t.circle(radio)
-    t.end_fill()
+<script>
 
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-# ============================================================
-# ESTRELLAS
-# ============================================================
+let W;
+let H;
+let escala;
 
-def estrella_brillante(x, y, tamaño):
+let estrellas = [];
+let corazones = [];
+let pasto = [];
+let floresPequenas = [];
+let girasoles = [];
 
-    t.color("#FFD700")
-    t.pensize(2)
-
-    # Línea vertical
-    ir(x, y)
-    t.goto(x, y + tamaño)
-    ir(x, y)
-    t.goto(x, y - tamaño)
-
-    # Línea horizontal
-    ir(x, y)
-    t.goto(x + tamaño, y)
-    ir(x, y)
-    t.goto(x - tamaño, y)
-
-    # Diagonal 1
-    ir(x, y)
-    t.goto(
-        x + tamaño * 0.7,
-        y + tamaño * 0.7
-    )
-
-    ir(x, y)
-    t.goto(
-        x - tamaño * 0.7,
-        y - tamaño * 0.7
-    )
-
-    # Diagonal 2
-    ir(x, y)
-    t.goto(
-        x - tamaño * 0.7,
-        y + tamaño * 0.7
-    )
-
-    ir(x, y)
-    t.goto(
-        x + tamaño * 0.7,
-        y - tamaño * 0.7
-    )
+let tiempo = 0;
 
 
-# Estrellas pequeñas
+// ============================================================
+// AJUSTAR PANTALLA
+// ============================================================
 
-for i in range(100):
+function ajustarPantalla() {
 
-    x = random.randint(-620, 620)
-    y = random.randint(40, 350)
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    tamaño = random.choice([2, 3, 4, 5])
+    W = window.innerWidth;
+    H = window.innerHeight;
 
-    punto(
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    escala = Math.min(
+        W / 1300,
+        H / 750
+    );
+
+    crearEscena();
+}
+
+
+// ============================================================
+// CONVERTIR COORDENADAS
+// ============================================================
+
+function X(x) {
+
+    return W / 2 + x * escala;
+
+}
+
+function Y(y) {
+
+    return H / 2 - y * escala;
+
+}
+
+
+// ============================================================
+// NÚMEROS ALEATORIOS
+// ============================================================
+
+function aleatorio(min, max) {
+
+    return min + Math.random() * (max - min);
+
+}
+
+
+function elegir(lista) {
+
+    return lista[
+        Math.floor(Math.random() * lista.length)
+    ];
+
+}
+
+
+// ============================================================
+// CREAR ESCENA
+// ============================================================
+
+function crearEscena() {
+
+    estrellas = [];
+    corazones = [];
+    pasto = [];
+    floresPequenas = [];
+
+
+    // --------------------------------------------------------
+    // ESTRELLAS
+    // --------------------------------------------------------
+
+    for (let i = 0; i < 105; i++) {
+
+        estrellas.push({
+
+            x: aleatorio(-620, 620),
+
+            y: aleatorio(40, 350),
+
+            radio: aleatorio(1.2, 3.5),
+
+            fase: aleatorio(
+                0,
+                Math.PI * 2
+            )
+
+        });
+
+    }
+
+
+    // --------------------------------------------------------
+    // CORAZONES
+    // --------------------------------------------------------
+
+    corazones = [
+
+        {
+            x: -470,
+            y: 210,
+            tamaño: 25
+        },
+
+        {
+            x: 360,
+            y: 190,
+            tamaño: 25
+        },
+
+        {
+            x: 180,
+            y: -120,
+            tamaño: 20
+        },
+
+        {
+            x: -180,
+            y: -90,
+            tamaño: 20
+        },
+
+        {
+            x: 520,
+            y: 50,
+            tamaño: 18
+        }
+
+    ];
+
+
+    // --------------------------------------------------------
+    // PASTO
+    // --------------------------------------------------------
+
+    for (let x = -640; x <= 640; x += 8) {
+
+        pasto.push({
+
+            x: x,
+
+            altura: aleatorio(
+                20,
+                80
+            ),
+
+            inclinacion: aleatorio(
+                -18,
+                18
+            )
+
+        });
+
+    }
+
+
+    // --------------------------------------------------------
+    // FLORES PEQUEÑAS
+    // --------------------------------------------------------
+
+    for (let i = 0; i < 35; i++) {
+
+        floresPequenas.push({
+
+            x: aleatorio(-600, 600),
+
+            y: aleatorio(-350, -270),
+
+            tamaño: aleatorio(5, 9),
+
+            fase: aleatorio(
+                0,
+                Math.PI * 2
+            )
+
+        });
+
+    }
+
+
+    // --------------------------------------------------------
+    // GIRASOLES
+    // --------------------------------------------------------
+
+    girasoles = [
+
+        {
+            x: -500,
+            y: -135,
+            tamaño: 48
+        },
+
+        {
+            x: -260,
+            y: -230,
+            tamaño: 38
+        },
+
+        {
+            x: 245,
+            y: -225,
+            tamaño: 38
+        },
+
+        {
+            x: 500,
+            y: -130,
+            tamaño: 48
+        },
+
+        {
+            x: -60,
+            y: -270,
+            tamaño: 25
+        },
+
+        {
+            x: 100,
+            y: -275,
+            tamaño: 23
+        },
+
+        {
+            x: 370,
+            y: -260,
+            tamaño: 27
+        }
+
+    ];
+
+}
+
+
+// ============================================================
+// ESTRELLA GRANDE
+// ============================================================
+
+function dibujarEstrella(
+    x,
+    y,
+    radio
+) {
+
+    ctx.save();
+
+    ctx.translate(
+        X(x),
+        Y(y)
+    );
+
+    ctx.strokeStyle = "#FFD700";
+
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        0,
+        -radio * escala
+    );
+
+    ctx.lineTo(
+        0,
+        radio * escala
+    );
+
+    ctx.moveTo(
+        -radio * escala,
+        0
+    );
+
+    ctx.lineTo(
+        radio * escala,
+        0
+    );
+
+    ctx.moveTo(
+        -radio * .7 * escala,
+        -radio * .7 * escala
+    );
+
+    ctx.lineTo(
+        radio * .7 * escala,
+        radio * .7 * escala
+    );
+
+    ctx.moveTo(
+        -radio * .7 * escala,
+        radio * .7 * escala
+    );
+
+    ctx.lineTo(
+        radio * .7 * escala,
+        -radio * .7 * escala
+    );
+
+    ctx.stroke();
+
+    ctx.restore();
+
+}
+
+
+// ============================================================
+// LUNA
+// ============================================================
+
+function dibujarLuna() {
+
+    const x = X(500);
+    const y = Y(260);
+
+    const radio = 65 * escala;
+
+
+    // Halo
+
+    ctx.save();
+
+    ctx.shadowBlur = 30 * escala;
+
+    ctx.shadowColor = "#FFD84A";
+
+    ctx.fillStyle = "#FFE66D";
+
+    ctx.beginPath();
+
+    ctx.arc(
         x,
         y,
-        tamaño,
-        "#FFD92E"
-    )
+        radio,
+        0,
+        Math.PI * 2
+    );
 
+    ctx.fill();
 
-# Estrellas grandes
+    ctx.shadowBlur = 0;
 
-estrellas = [
-    (-510, 270, 13),
-    (-350, 315, 10),
-    (-80, 300, 12),
-    (80, 330, 10),
-    (280, 300, 12),
-    (470, 275, 14),
-    (580, 160, 9),
-    (-220, 170, 9),
-    (350, 160, 8)
-]
 
-for x, y, tamaño in estrellas:
-    estrella_brillante(x, y, tamaño)
+    // Parte negra
 
+    ctx.fillStyle = "black";
 
-# ============================================================
-# LUNA
-# ============================================================
+    ctx.beginPath();
 
-# Halo de la luna
+    ctx.arc(
+        X(470),
+        Y(280),
+        60 * escala,
+        0,
+        Math.PI * 2
+    );
 
-circulo(
-    500,
-    260,
-    82,
-    "#171300"
-)
+    ctx.fill();
 
-# Luna amarilla
 
-circulo(
-    500,
-    260,
-    65,
-    "#FFE66D"
-)
+    // Pequeños detalles
 
-# Parte negra para crear la luna creciente
+    ctx.fillStyle = "#F5D84A";
 
-circulo(
-    470,
-    280,
-    60,
-    "black"
-)
+    ctx.globalAlpha = .6;
 
-# Detalles de la luna
+    ctx.beginPath();
 
-punto(525, 285, 7, "#F5D84A")
-punto(515, 240, 5, "#F5D84A")
-punto(545, 265, 4, "#F5D84A")
+    ctx.arc(
+        X(525),
+        Y(285),
+        4 * escala,
+        0,
+        Math.PI * 2
+    );
 
+    ctx.fill();
 
-# ============================================================
-# CORAZONES
-# ============================================================
 
-def corazon(x, y, tamaño):
+    ctx.beginPath();
 
-    t.color("#FFD21C")
-    t.pensize(3)
+    ctx.arc(
+        X(515),
+        Y(240),
+        3 * escala,
+        0,
+        Math.PI * 2
+    );
 
-    ir(x, y)
+    ctx.fill();
 
-    t.setheading(140)
 
-    t.forward(tamaño)
+    ctx.beginPath();
 
-    t.circle(-tamaño / 2, 200)
+    ctx.arc(
+        X(545),
+        Y(265),
+        2 * escala,
+        0,
+        Math.PI * 2
+    );
 
-    t.left(120)
+    ctx.fill();
 
-    t.circle(-tamaño / 2, 200)
+    ctx.restore();
 
-    t.forward(tamaño)
+}
 
 
-corazon(-470, 210, 25)
-corazon(360, 190, 25)
-corazon(180, -120, 20)
-corazon(-180, -90, 20)
-corazon(520, 50, 18)
+// ============================================================
+// CORAZÓN
+// ============================================================
 
+function dibujarCorazon(
+    x,
+    y,
+    tamaño
+) {
 
-# ============================================================
-# MARIPOSA
-# ============================================================
+    ctx.save();
 
-def mariposa(x, y, tamaño):
+    ctx.translate(
+        X(x),
+        Y(y)
+    );
 
-    # Alas superiores
-    circulo(
-        x - tamaño,
-        y + tamaño // 2,
-        tamaño // 2,
-        "#FFD21C"
-    )
+    ctx.scale(
+        escala,
+        escala
+    );
 
-    circulo(
-        x + tamaño,
-        y + tamaño // 2,
-        tamaño // 2,
-        "#FFD21C"
-    )
+    ctx.strokeStyle = "#FFD21C";
 
-    # Alas inferiores
-    circulo(
-        x - tamaño,
-        y - tamaño // 2,
-        tamaño // 2,
-        "#F5C400"
-    )
+    ctx.lineWidth = 3;
 
-    circulo(
-        x + tamaño,
-        y - tamaño // 2,
-        tamaño // 2,
-        "#F5C400"
-    )
+    ctx.beginPath();
 
-    # Cuerpo
-    ir(x, y - tamaño)
+    ctx.moveTo(
+        0,
+        tamaño * .85
+    );
 
-    t.color("#8A5000")
-    t.pensize(5)
+    ctx.bezierCurveTo(
+        -tamaño * 1.3,
+        tamaño * .05,
+        -tamaño * .75,
+        -tamaño * .8,
+        0,
+        -tamaño * .2
+    );
 
-    t.goto(x, y + tamaño)
+    ctx.bezierCurveTo(
+        tamaño * .75,
+        -tamaño * .8,
+        tamaño * 1.3,
+        tamaño * .05,
+        0,
+        tamaño * .85
+    );
 
-    # Antenas
-    t.pensize(2)
+    ctx.stroke();
 
-    ir(x, y + tamaño)
-    t.goto(
-        x - 10,
-        y + tamaño + 15
-    )
+    ctx.restore();
 
-    ir(x, y + tamaño)
-    t.goto(
-        x + 10,
-        y + tamaño + 15
-    )
+}
 
 
-mariposa(-480, 170, 10)
+// ============================================================
+// HOJA
+// ============================================================
 
+function dibujarHoja(
+    x,
+    y,
+    tamaño,
+    angulo
+) {
 
-# ============================================================
-# TÍTULO
-# ============================================================
+    ctx.save();
 
-ir(0, 125)
+    ctx.translate(
+        X(x),
+        Y(y)
+    );
 
-t.color("#FFD21C")
+    ctx.rotate(
+        -angulo * Math.PI / 180
+    );
 
-t.write(
-    "Feliz día de las",
-    align="center",
-    font=("Comic Sans MS", 42, "bold")
-)
+    ctx.scale(
+        escala,
+        escala
+    );
 
-ir(0, 65)
+    ctx.fillStyle = "#2E8B22";
 
-t.write(
-    "Flores Amarillas CHUS :3",
-    align="center",
-    font=("Comic Sans MS", 42, "bold")
-)
+    ctx.beginPath();
 
+    ctx.moveTo(
+        0,
+        0
+    );
 
-# ============================================================
-# DECORACIÓN DEL TÍTULO
-# ============================================================
+    ctx.bezierCurveTo(
+        tamaño * .2,
+        -tamaño,
 
-t.color("#FFD21C")
-t.pensize(5)
+        tamaño * 1.3,
+        -tamaño * 1.1,
 
-# Decoración izquierda
+        tamaño * 1.25,
+        0
+    );
 
-ir(-390, 95)
-t.setheading(160)
-t.forward(30)
-
-ir(-385, 70)
-t.setheading(170)
-t.forward(25)
-
-# Decoración derecha
-
-ir(390, 95)
-t.setheading(20)
-t.forward(30)
-
-ir(385, 70)
-t.setheading(10)
-t.forward(25)
-
-
-# ============================================================
-# MENSAJE
-# ============================================================
-
-t.color("#FFD92E")
-
-ir(0, 5)
-
-t.write(
-    "recuerda que eres una persona increible ^^",
-    align="center",
-    font=("Comic Sans MS", 20, "normal")
-)
-
-ir(0, -30)
-
-t.write(
-    "espero no ser el unico ",
-    align="center",
-    font=("Comic Sans MS", 20, "normal")
-)
-
-ir(0, -65)
-
-t.write(
-    "que te haga un detalle asi nwn",
-    align="center",
-    font=("Comic Sans MS", 20, "normal")
-)
-
-ir(0, -100)
-
-t.write(
-    "abrazos amifita OwO",
-    align="center",
-    font=("Comic Sans MS", 20, "normal")
-)
-
-
-# ============================================================
-# TALLOS
-# ============================================================
-
-def tallo(x, y, altura, grosor):
-
-    ir(x, y)
-
-    t.color("#218B21")
-    t.pensize(grosor)
-
-    t.setheading(90)
-    t.forward(altura)
-
-
-# ============================================================
-# HOJAS
-# ============================================================
-
-def hoja(x, y, tamaño, angulo):
-
-    ir(x, y)
-
-    t.setheading(angulo)
-
-    t.color("#2E8B22")
-
-    t.begin_fill()
-
-    t.circle(tamaño, 70)
-
-    t.left(110)
-
-    t.circle(tamaño, 70)
-
-    t.end_fill()
-
-    # Nervadura de la hoja
-
-    ir(x, y)
-
-    t.setheading(angulo)
-
-    t.color("#66A833")
-    t.pensize(2)
-
-    t.forward(tamaño * 1.2)
-
-
-# ============================================================
-# PÉTALOS DEL GIRASOL
-# ============================================================
-
-def petalo_girasol(x, y, tamaño, angulo):
-
-    # --------------------------------------------------------
-    # El pétalo se construye alrededor del punto central.
-    # Esto evita que los pétalos queden separados del centro.
-    # --------------------------------------------------------
-
-    rad = math.radians(angulo)
-
-    # Dirección del pétalo
-    dx = math.cos(rad)
-    dy = math.sin(rad)
-
-    # Dirección perpendicular
-    px = -dy
-    py = dx
-
-    # Dimensiones
-    largo = tamaño * 1.35
-    ancho = tamaño * 0.38
-
-    # Centro del pétalo
-    centro_x = x + dx * tamaño * 0.60
-    centro_y = y + dy * tamaño * 0.60
-
-    puntos = []
-
-    # --------------------------------------------------------
-    # PARTE SUPERIOR DEL PÉTALO
-    # --------------------------------------------------------
-
-    for i in range(21):
-
-        angulo_curva = math.pi * i / 20
-
-        local_x = math.cos(angulo_curva) * largo * 0.50
-        local_y = math.sin(angulo_curva) * ancho
-
-        nuevo_x = (
-            centro_x
-            + dx * local_x
-            + px * local_y
-        )
-
-        nuevo_y = (
-            centro_y
-            + dy * local_x
-            + py * local_y
-        )
-
-        puntos.append(
-            (nuevo_x, nuevo_y)
-        )
-
-    # --------------------------------------------------------
-    # PARTE INFERIOR DEL PÉTALO
-    # --------------------------------------------------------
-
-    for i in range(20, -1, -1):
-
-        angulo_curva = math.pi * i / 20
-
-        local_x = math.cos(angulo_curva) * largo * 0.50
-        local_y = -math.sin(angulo_curva) * ancho
-
-        nuevo_x = (
-            centro_x
-            + dx * local_x
-            + px * local_y
-        )
-
-        nuevo_y = (
-            centro_y
-            + dy * local_x
-            + py * local_y
-        )
-
-        puntos.append(
-            (nuevo_x, nuevo_y)
-        )
-
-    # --------------------------------------------------------
-    # DIBUJAR EL PÉTALO
-    # --------------------------------------------------------
-
-    t.color("#FFD21C")
-    t.begin_fill()
-
-    ir(
-        puntos[0][0],
-        puntos[0][1]
-    )
-
-    for px_actual, py_actual in puntos[1:]:
-
-        t.goto(
-            px_actual,
-            py_actual
-        )
-
-    t.goto(
-        puntos[0][0],
-        puntos[0][1]
-    )
-
-    t.end_fill()
-
-
-# ============================================================
-# GIRASOL
-# ============================================================
-
-def girasol(x, y, tamaño):
-
-    # ========================================================
-    # 1. TALLO
-    # ========================================================
-
-    tallo(
-        x,
-        y - tamaño * 3.8,
-        tamaño * 4.8,
-        max(4, int(tamaño / 5))
-    )
-
-    # ========================================================
-    # 2. HOJAS
-    # ========================================================
-
-    hoja(
-        x,
-        y - tamaño * 2.2,
+    ctx.bezierCurveTo(
         tamaño * 1.1,
-        145
-    )
+        tamaño * .75,
 
-    hoja(
-        x,
-        y - tamaño * 3.2,
-        tamaño * 1.0,
-        35
-    )
+        tamaño * .25,
+        tamaño * .85,
 
-    # ========================================================
-    # 3. PÉTALOS AMARILLOS
-    # ========================================================
+        0,
+        0
+    );
 
-    # Primera fila de pétalos
+    ctx.fill();
 
-    for angulo in range(0, 360, 30):
 
-        petalo_girasol(
-            x,
-            y,
-            tamaño,
-            angulo
-        )
+    // Nervadura
 
-    # Segunda fila de pétalos
+    ctx.strokeStyle = "#66A833";
 
-    for angulo in range(15, 360, 30):
+    ctx.lineWidth = 2;
 
-        petalo_girasol(
-            x,
-            y,
-            tamaño * 0.82,
-            angulo
-        )
+    ctx.beginPath();
 
-    # ========================================================
-    # 4. CENTRO MARRÓN
-    # ========================================================
-    #
-    # IMPORTANTE:
-    #
-    # Los pétalos se dibujan primero.
-    # El centro se dibuja DESPUÉS.
-    #
-    # x,y es exactamente el centro de la flor.
-    #
-    # De esta manera el marrón queda ENCIMA de los pétalos
-    # y exactamente en el medio.
-    # ========================================================
+    ctx.moveTo(
+        0,
+        0
+    );
 
-    circulo(
-        x,
-        y,
-        tamaño * 0.52,
-        "#7A3B00"
-    )
+    ctx.lineTo(
+        tamaño * 1.15,
+        -tamaño * .1
+    );
 
-    circulo(
-        x,
-        y,
-        tamaño * 0.37,
-        "#3B1800"
-    )
+    ctx.stroke();
 
-    # ========================================================
-    # 5. SEMILLAS DEL CENTRO
-    # ========================================================
+    ctx.restore();
 
-    for i in range(20):
+}
 
-        angulo = random.uniform(
+
+// ============================================================
+// TALLO
+// ============================================================
+
+function dibujarTallo(
+    x,
+    y,
+    tamaño
+) {
+
+    ctx.save();
+
+    ctx.strokeStyle = "#218B21";
+
+    ctx.lineWidth =
+        Math.max(
+            4,
+            tamaño / 5
+        ) * escala;
+
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        X(x),
+        Y(y - tamaño * 3.8)
+    );
+
+    ctx.lineTo(
+        X(x),
+        Y(y - tamaño * .15)
+    );
+
+    ctx.stroke();
+
+    ctx.restore();
+
+}
+
+
+// ============================================================
+// PÉTALO DEL GIRASOL
+// ============================================================
+
+function dibujarPetalo(
+    centroX,
+    centroY,
+    tamaño,
+    angulo,
+    segundaFila
+) {
+
+    const radianes =
+        angulo * Math.PI / 180;
+
+
+    // Dirección del pétalo
+
+    const direccionX =
+        Math.cos(radianes);
+
+    const direccionY =
+        Math.sin(radianes);
+
+
+    // Distancia desde el centro
+
+    const distancia =
+        tamaño *
+        (
+            .58 +
+            (segundaFila ? .02 : 0)
+        );
+
+
+    const petaloX =
+        centroX +
+        direccionX * distancia;
+
+
+    const petaloY =
+        centroY +
+        direccionY * distancia;
+
+
+    ctx.save();
+
+    ctx.translate(
+        X(petaloX),
+        Y(petaloY)
+    );
+
+    ctx.rotate(
+        -radianes
+    );
+
+    ctx.scale(
+        escala,
+        escala
+    );
+
+
+    const largo =
+        tamaño *
+        1.05 *
+        (segundaFila ? .88 : 1);
+
+
+    const ancho =
+        tamaño * .38;
+
+
+    // Degradado amarillo
+
+    const degradado =
+        ctx.createLinearGradient(
+            -largo / 2,
             0,
-            math.pi * 2
-        )
-
-        radio = random.uniform(
-            tamaño * 0.10,
-            tamaño * 0.40
-        )
-
-        semilla_x = (
-            x
-            + math.cos(angulo) * radio
-        )
-
-        semilla_y = (
-            y
-            + math.sin(angulo) * radio
-        )
-
-        punto(
-            semilla_x,
-            semilla_y,
-            3,
-            "#D99A20"
-        )
+            largo / 2,
+            0
+        );
 
 
-# ============================================================
-# GIRASOLES GRANDES
-# ============================================================
+    degradado.addColorStop(
+        0,
+        "#FFC400"
+    );
 
-girasol(
-    -500,
-    -135,
-    48
-)
+    degradado.addColorStop(
+        .55,
+        "#FFD21C"
+    );
 
-girasol(
-    -260,
-    -230,
-    38
-)
-
-girasol(
-    245,
-    -225,
-    38
-)
-
-girasol(
-    500,
-    -130,
-    48
-)
+    degradado.addColorStop(
+        1,
+        "#FFE45A"
+    );
 
 
-# ============================================================
-# GIRASOLES PEQUEÑOS
-# ============================================================
-
-girasol(
-    -60,
-    -270,
-    25
-)
-
-girasol(
-    100,
-    -275,
-    23
-)
-
-girasol(
-    370,
-    -260,
-    27
-)
+    ctx.fillStyle = degradado;
 
 
-# ============================================================
-# PASTO
-# ============================================================
+    // Forma del pétalo
 
-def pasto(x, y, altura):
+    ctx.beginPath();
 
-    t.color(
-        random.choice([
-            "#0D5018",
-            "#146B1E",
-            "#208522",
-            "#2A9525"
-        ])
-    )
+    ctx.moveTo(
+        -largo * .48,
+        0
+    );
 
-    t.pensize(
-        random.choice([2, 3, 4])
-    )
+    ctx.bezierCurveTo(
 
-    ir(x, y)
+        -largo * .15,
+        -ancho,
 
-    t.setheading(
-        random.randint(65, 115)
-    )
+        largo * .32,
+        -ancho * 1.05,
 
-    t.forward(altura)
+        largo * .5,
+        0
 
+    );
 
-# Dibujar mucho pasto
+    ctx.bezierCurveTo(
 
-for x in range(-640, 641, 8):
+        largo * .32,
+        ancho * 1.05,
 
-    altura = random.randint(20, 80)
+        -largo * .15,
+        ancho,
 
-    pasto(
-        x,
-        -360,
-        altura
-    )
+        -largo * .48,
+        0
 
+    );
 
-# ============================================================
-# HOJAS EXTRA
-# ============================================================
+    ctx.closePath();
 
-hojas_extra = [
+    ctx.fill();
 
-    (-570, -310, 35, 60),
-    (-540, -335, 30, 120),
+    ctx.restore();
 
-    (-430, -330, 32, 50),
-    (-350, -340, 30, 130),
-
-    (-150, -330, 35, 60),
-    (-100, -340, 28, 120),
-
-    (150, -335, 35, 50),
-    (200, -340, 28, 130),
-
-    (300, -330, 35, 60),
-    (420, -330, 32, 120),
-
-    (550, -310, 38, 60)
-]
-
-for x, y, tamaño, angulo in hojas_extra:
-
-    hoja(
-        x,
-        y,
-        tamaño,
-        angulo
-    )
+}
 
 
-# ============================================================
-# FLORES PEQUEÑAS
-# ============================================================
+// ============================================================
+// GIRASOL
+// ============================================================
 
-def flor_pequena(x, y, tamaño):
+function dibujarGirasol(
+    flor
+) {
 
-    # Pétalos
+    const x =
+        flor.x;
 
-    for angulo in range(0, 360, 72):
+    const y =
+        flor.y;
 
-        px = (
-            x
-            + math.cos(math.radians(angulo))
-            * tamaño
-        )
-
-        py = (
-            y
-            + math.sin(math.radians(angulo))
-            * tamaño
-        )
-
-        punto(
-            px,
-            py,
-            tamaño * 1.2,
-            "#FFD21C"
-        )
-
-    # Centro
-
-    punto(
-        x,
-        y,
-        tamaño * 0.9,
-        "#8A4800"
-    )
+    const tamaño =
+        flor.tamaño;
 
 
-# Crear muchas flores pequeñas
+    // --------------------------------------------------------
+    // TALLO
+    // --------------------------------------------------------
 
-for i in range(35):
-
-    x = random.randint(-600, 600)
-    y = random.randint(-350, -270)
-
-    tamaño = random.randint(5, 9)
-
-    flor_pequena(
+    dibujarTallo(
         x,
         y,
         tamaño
-    )
+    );
 
 
-# ============================================================
-# HOJAS PEQUEÑAS EXTRA
-# ============================================================
+    // --------------------------------------------------------
+    // HOJAS
+    // --------------------------------------------------------
 
-for i in range(25):
-
-    x = random.randint(-620, 620)
-    y = random.randint(-350, -280)
-
-    tamaño = random.randint(10, 18)
-
-    hoja(
+    dibujarHoja(
         x,
-        y,
+        y - tamaño * 2,
         tamaño,
-        random.randint(20, 160)
-    )
+        145
+    );
+
+    dibujarHoja(
+        x,
+        y - tamaño * 3,
+        tamaño * .95,
+        35
+    );
 
 
-# ============================================================
-# LUCES DORADAS
-# ============================================================
+    // --------------------------------------------------------
+    // PÉTALOS
+    // --------------------------------------------------------
 
-for i in range(20):
+    for (
+        let angulo = 0;
+        angulo < 360;
+        angulo += 30
+    ) {
 
-    x = random.randint(-600, 600)
-    y = random.randint(-220, 100)
+        dibujarPetalo(
+            x,
+            y,
+            tamaño,
+            angulo,
+            false
+        );
 
-    punto(
+    }
+
+
+    for (
+        let angulo = 15;
+        angulo < 360;
+        angulo += 30
+    ) {
+
+        dibujarPetalo(
+            x,
+            y,
+            tamaño * .82,
+            angulo,
+            true
+        );
+
+    }
+
+
+    // ========================================================
+    // CENTRO DEL GIRASOL
+    // ========================================================
+    //
+    // ESTE ES EL PUNTO IMPORTANTE:
+    //
+    // El centro marrón se dibuja DESPUÉS de los pétalos.
+    //
+    // x,y es exactamente el centro.
+    //
+    // ========================================================
+
+    const centroX =
+        X(x);
+
+    const centroY =
+        Y(y);
+
+    const radio =
+        tamaño * .52 * escala;
+
+
+    // Centro exterior
+
+    ctx.save();
+
+    ctx.shadowBlur =
+        8 * escala;
+
+    ctx.shadowColor =
+        "#6B3200";
+
+    ctx.fillStyle =
+        "#7A3B00";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        centroX,
+        centroY,
+        radio,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Centro interior
+
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle =
+        "#3B1800";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        centroX,
+        centroY,
+        radio * .71,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // --------------------------------------------------------
+    // SEMILLAS
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        "#D99A20";
+
+    for (
+        let i = 0;
+        i < 22;
+        i++
+    ) {
+
+        const angulo =
+            i * 2.399;
+
+        const distancia =
+            radio *
+            (
+                .22 +
+                .58 * (i / 22)
+            );
+
+
+        const semillaX =
+            centroX +
+            Math.cos(angulo) *
+            distancia;
+
+
+        const semillaY =
+            centroY +
+            Math.sin(angulo) *
+            distancia;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            semillaX,
+            semillaY,
+            Math.max(
+                1.5,
+                1.8 * escala
+            ),
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+    }
+
+    ctx.restore();
+
+}
+
+
+// ============================================================
+// FLORES PEQUEÑAS
+// ============================================================
+
+function dibujarFlorPequena(
+    flor
+) {
+
+    const x =
+        X(flor.x);
+
+    const y =
+        Y(flor.y);
+
+    const tamaño =
+        flor.tamaño * escala;
+
+
+    ctx.fillStyle =
+        "#FFD21C";
+
+
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
+
+        const angulo =
+            i * Math.PI * 2 / 5;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+
+            x +
+            Math.cos(angulo) *
+            tamaño * .8,
+
+            y +
+            Math.sin(angulo) *
+            tamaño * .8,
+
+            tamaño * .55,
+
+            0,
+            Math.PI * 2
+
+        );
+
+        ctx.fill();
+
+    }
+
+
+    // Centro
+
+    ctx.fillStyle =
+        "#8A4800";
+
+    ctx.beginPath();
+
+    ctx.arc(
         x,
         y,
-        random.randint(3, 7),
-        "#FFD21C"
-    )
+        tamaño * .45,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+}
 
 
-# ============================================================
-# MOSTRAR EL DIBUJO
-# ============================================================
+// ============================================================
+// PASTO
+// ============================================================
 
-pantalla.update()
+function dibujarPasto() {
 
-turtle.done()
+    pasto.forEach(
+        function(hierba) {
+
+            ctx.save();
+
+            ctx.strokeStyle =
+                elegir([
+                    "#0D5018",
+                    "#146B1E",
+                    "#208522",
+                    "#2A9525"
+                ]);
+
+
+            ctx.lineWidth =
+                elegir([
+                    2,
+                    3,
+                    4
+                ]) * escala;
+
+
+            ctx.lineCap =
+                "round";
+
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                X(hierba.x),
+                Y(-360)
+            );
+
+
+            ctx.quadraticCurveTo(
+
+                X(
+                    hierba.x +
+                    hierba.inclinacion * .5
+                ),
+
+                Y(
+                    -360 +
+                    hierba.altura * .55
+                ),
+
+                X(
+                    hierba.x +
+                    hierba.inclinacion
+                ),
+
+                Y(
+                    -360 +
+                    hierba.altura
+                )
+
+            );
+
+            ctx.stroke();
+
+            ctx.restore();
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// MARIPOSA
+// ============================================================
+
+function dibujarMariposa() {
+
+    const x =
+        X(-480);
+
+    const y =
+        Y(170);
+
+
+    ctx.save();
+
+
+    // Alas amarillas
+
+    ctx.fillStyle =
+        "#FFD21C";
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x - 10 * escala,
+        y,
+        10 * escala,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + 10 * escala,
+        y,
+        10 * escala,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Alas inferiores
+
+    ctx.fillStyle =
+        "#F5C400";
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x - 10 * escala,
+        y + 12 * escala,
+        8 * escala,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + 10 * escala,
+        y + 12 * escala,
+        8 * escala,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+
+    // Cuerpo
+
+    ctx.strokeStyle =
+        "#8A5000";
+
+    ctx.lineWidth =
+        4 * escala;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x,
+        y - 8 * escala
+    );
+
+    ctx.lineTo(
+        x,
+        y + 15 * escala
+    );
+
+    ctx.stroke();
+
+
+    // Antenas
+
+    ctx.lineWidth =
+        1.5 * escala;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x,
+        y - 8 * escala
+    );
+
+    ctx.lineTo(
+        x - 9 * escala,
+        y - 22 * escala
+    );
+
+
+    ctx.moveTo(
+        x,
+        y - 8 * escala
+    );
+
+    ctx.lineTo(
+        x + 9 * escala,
+        y - 22 * escala
+    );
+
+    ctx.stroke();
+
+    ctx.restore();
+
+}
+
+
+// ============================================================
+// TEXTO
+// ============================================================
+
+function dibujarTexto() {
+
+    ctx.save();
+
+
+    ctx.textAlign =
+        "center";
+
+    ctx.textBaseline =
+        "middle";
+
+
+    ctx.fillStyle =
+        "#FFD21C";
+
+
+    ctx.shadowBlur =
+        10 * escala;
+
+    ctx.shadowColor =
+        "#7A5500";
+
+
+    // --------------------------------------------------------
+    // TÍTULO
+    // --------------------------------------------------------
+
+    const tamañoTitulo =
+        Math.max(
+            28,
+            42 * escala
+        );
+
+
+    ctx.font =
+        `bold ${tamañoTitulo}px "Trebuchet MS", "Comic Sans MS", sans-serif`;
+
+
+    ctx.fillText(
+        "Feliz día de las",
+        X(0),
+        Y(125)
+    );
+
+
+    ctx.fillText(
+        "Flores Amarillas Chus :3",
+        X(0),
+        Y(65)
+    );
+
+
+    // --------------------------------------------------------
+    // MENSAJE
+    // --------------------------------------------------------
+
+    ctx.shadowBlur = 0;
+
+
+    const tamañoMensaje =
+        Math.max(
+            15,
+            20 * escala
+        );
+
+
+    ctx.font =
+        `${tamañoMensaje}px "Trebuchet MS", "Comic Sans MS", sans-serif`;
+
+
+    ctx.fillText(
+        "Recuerda que eres una persona increible ^^",
+        X(0),
+        Y(5)
+    );
+
+
+    ctx.fillText(
+        "espero no ser el único que",
+        X(0),
+        Y(-30)
+    );
+
+
+    ctx.fillText(
+        "te haga un detalle así",
+        X(0),
+        Y(-65)
+    );
+
+
+    ctx.fillText(
+        "abrazos amifita tqm<3",
+        X(0),
+        Y(-100)
+    );
+
+
+    ctx.restore();
+
+}
+
+
+// ============================================================
+// DIBUJAR TODA LA ESCENA
+// ============================================================
+
+function dibujar() {
+
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+
+    // Fondo negro
+
+    ctx.fillStyle =
+        "black";
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+
+    // --------------------------------------------------------
+    // ESTRELLAS PEQUEÑAS
+    // --------------------------------------------------------
+
+    estrellas.forEach(
+        function(estrella) {
+
+            const brillo =
+                .65 +
+                .35 *
+                Math.sin(
+                    tiempo * .002 +
+                    estrella.fase
+                );
+
+
+            ctx.fillStyle =
+                "#FFD92E";
+
+
+            ctx.globalAlpha =
+                brillo;
+
+
+            ctx.beginPath();
+
+            ctx.arc(
+                X(estrella.x),
+                Y(estrella.y),
+                estrella.radio * escala,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+        }
+    );
+
+
+    ctx.globalAlpha = 1;
+
+
+    // --------------------------------------------------------
+    // ESTRELLAS GRANDES
+    // --------------------------------------------------------
+
+    const estrellasGrandes = [
+
+        [-510,270,13],
+        [-350,315,10],
+        [-80,300,12],
+        [80,330,10],
+        [280,300,12],
+        [470,275,14],
+        [580,160,9],
+        [-220,170,9],
+        [350,160,8]
+
+    ];
+
+
+    estrellasGrandes.forEach(
+        function(e) {
+
+            dibujarEstrella(
+                e[0],
+                e[1],
+                e[2]
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // LUNA
+    // --------------------------------------------------------
+
+    dibujarLuna();
+
+
+    // --------------------------------------------------------
+    // CORAZONES
+    // --------------------------------------------------------
+
+    corazones.forEach(
+        function(corazon) {
+
+            dibujarCorazon(
+                corazon.x,
+                corazon.y,
+                corazon.tamaño
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // MARIPOSA
+    // --------------------------------------------------------
+
+    dibujarMariposa();
+
+
+    // --------------------------------------------------------
+    // TEXTO
+    // --------------------------------------------------------
+
+    dibujarTexto();
+
+
+    // --------------------------------------------------------
+    // PASTO
+    // --------------------------------------------------------
+
+    dibujarPasto();
+
+
+    // --------------------------------------------------------
+    // FLORES PEQUEÑAS
+    // --------------------------------------------------------
+
+    floresPequenas.forEach(
+        function(flor) {
+
+            dibujarFlorPequena(
+                flor
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // HOJAS EXTRA
+    // --------------------------------------------------------
+
+    const hojas = [
+
+        [-570,-310,35,60],
+        [-540,-335,30,120],
+        [-430,-330,32,50],
+        [-350,-340,30,130],
+        [-150,-330,35,60],
+        [-100,-340,28,120],
+        [150,-335,35,50],
+        [200,-340,28,130],
+        [300,-330,35,60],
+        [420,-330,32,120],
+        [550,-310,38,60]
+
+    ];
+
+
+    hojas.forEach(
+        function(hoja) {
+
+            dibujarHoja(
+                hoja[0],
+                hoja[1],
+                hoja[2],
+                hoja[3]
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // GIRASOLES
+    // --------------------------------------------------------
+
+    girasoles.forEach(
+        function(flor) {
+
+            dibujarGirasol(
+                flor
+            );
+
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // PEQUEÑAS LUCES DORADAS
+    // --------------------------------------------------------
+
+    for (
+        let i = 0;
+        i < 20;
+        i++
+    ) {
+
+        const x =
+            -600 +
+            ((i * 83) % 1200);
+
+
+        const y =
+            -220 +
+            ((i * 47) % 320);
+
+
+        ctx.fillStyle =
+            "#FFD21C";
+
+
+        ctx.globalAlpha =
+            .75;
+
+
+        ctx.beginPath();
+
+        ctx.arc(
+            X(x),
+            Y(y),
+            2.5 * escala,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+    }
+
+
+    ctx.globalAlpha = 1;
+
+
+    tiempo++;
+
+
+    requestAnimationFrame(
+        dibujar
+    );
+
+}
+
+
+// ============================================================
+// INICIAR
+// ============================================================
+
+window.addEventListener(
+    "resize",
+    ajustarPantalla
+);
+
+
+ajustarPantalla();
+
+dibujar();
+
+</script>
+
+
+</body>
+</html>
